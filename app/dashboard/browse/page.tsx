@@ -6,7 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useTheme } from "@/app/providers/theme-provider"
 import { Package, ShoppingCart, AlertCircle } from "lucide-react"
+import { SuccessModal } from "@/components/success-modal"
+import { LoadingSpinner } from "@/components/loading-spinner"
 
 interface InventoryItem {
   id: string
@@ -24,6 +28,7 @@ interface BorrowItem {
 }
 
 export default function BrowsePage() {
+  const { theme } = useTheme()
   const [items, setItems] = useState<InventoryItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -31,6 +36,11 @@ export default function BrowsePage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [categories, setCategories] = useState<string[]>([])
+  const [borrowDate, setBorrowDate] = useState<string>("")
+  const [returnDate, setReturnDate] = useState<string>("")
+  const [showSuccess, setShowSuccess] = useState(false)
+  const today = new Date().toISOString().slice(0, 10)
+  const router = useRouter()
 
   useEffect(() => {
     const loadItems = async () => {
@@ -79,76 +89,143 @@ export default function BrowsePage() {
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user || selectedItems.size === 0) return
+    if (!user) {
+      // Redirect unauthenticated users to login
+      router.push("/auth/login")
+      return
+    }
+
+    if (selectedItems.size === 0) {
+      console.error("No items selected")
+      setError("Pilih barang terlebih dahulu")
+      return
+    }
+
+    // Validate dates
+    if (!borrowDate || !returnDate) {
+      setError("Masukkan tanggal pinjam dan tanggal kembali")
+      return
+    }
+
+    const borrowDateObj = new Date(borrowDate)
+    const returnDateObj = new Date(returnDate)
+    if (isNaN(borrowDateObj.getTime()) || isNaN(returnDateObj.getTime())) {
+      setError("Format tanggal tidak valid")
+      return
+    }
+    if (borrowDateObj > returnDateObj) {
+      setError("Tanggal kembali harus sama atau setelah tanggal pinjam")
+      return
+    }
 
     const borrowRequests = Array.from(selectedItems.entries()).map(([itemId, quantity]) => ({
       student_id: user.id,
       item_id: itemId,
       quantity_requested: quantity,
       status: "pending",
+      borrow_date: borrowDateObj.toISOString(),
+      return_date: returnDateObj.toISOString(),
     }))
 
-    const { error: insertError } = await supabase.from("borrow_requests").insert(borrowRequests)
+    console.log("User ID:", user.id)
+    console.log("Sending requests:", borrowRequests)
+
+    const { error: insertError, data } = await supabase.from("borrow_requests").insert(borrowRequests)
 
     if (insertError) {
-      setError(insertError.message)
+      console.error("Insert error:", insertError)
+      console.error("Error details:", insertError.message, insertError.code)
+      setError(`Error: ${insertError.message}`)
     } else {
+      console.log("Request berhasil dikirim!", data)
       setSelectedItems(new Map())
       setError(null)
-      alert("Borrow requests submitted successfully!")
+      // reset dates after successful submit
+      setBorrowDate("")
+      setReturnDate("")
+      setShowSuccess(true)
     }
   }
 
   if (isLoading) {
-    return <div className="text-slate-400">Loading items...</div>
+    return <LoadingSpinner />
   }
 
   return (
     <div className="space-y-6">
+      <SuccessModal
+        isOpen={showSuccess}
+        title="Permintaan Berhasil Dikirim"
+        message="Barang yang Anda minta akan diproses oleh admin. Terima kasih telah menggunakan sistem inventaris!"
+        onClose={() => setShowSuccess(false)}
+        autoCloseDuration={3000}
+      />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-3xl font-bold text-white">Browse Inventory</h1>
+        <h1 className="text-3xl font-bold text-white dark:text-slate-900">Lihat Inventaris</h1>
         {selectedItems.size > 0 && (
-          <Button onClick={handleSubmitRequest} className="bg-blue-600 hover:bg-blue-700">
+          <Button
+            onClick={handleSubmitRequest}
+            className="bg-blue-600 hover:bg-blue-700 text-white dark:text-white"
+            disabled={!borrowDate || !returnDate}
+          >
             <ShoppingCart className="mr-2 h-4 w-4" />
-            Submit Request ({selectedItems.size})
+            Kirim Permintaan ({selectedItems.size})
           </Button>
         )}
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 rounded-lg bg-red-500/10 p-4 text-red-400">
+        <div className="flex items-center gap-2 rounded-lg bg-red-500/10 dark:bg-red-100 p-4 text-red-400 dark:text-red-700">
           <AlertCircle className="h-5 w-5" />
           {error}
         </div>
       )}
 
       {/* Filters */}
-      <Card className="border-slate-700 bg-slate-800">
+      <Card className="border-slate-700 dark:border-slate-200 bg-slate-800 dark:bg-white">
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
             <div className="flex-1">
-              <Label className="text-slate-200">Search</Label>
+              <Label className="text-slate-700 dark:text-slate-200">Cari</Label>
               <Input
-                placeholder="Search items..."
+                placeholder="Cari barang..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="mt-2 border-slate-600 bg-slate-700 text-white"
+                className="mt-2 border-slate-600 dark:border-slate-300 bg-slate-700 dark:bg-white text-white dark:text-slate-900"
               />
             </div>
             <div className="flex-1">
-              <Label className="text-slate-200">Category</Label>
+              <Label className="text-slate-700 dark:text-slate-200">Kategori</Label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="mt-2 w-full rounded-md border border-slate-600 bg-slate-700 px-3 py-2 text-white"
+                className="mt-2 w-full rounded-md border border-slate-600 dark:border-slate-300 bg-slate-700 dark:bg-white px-3 py-2 text-white dark:text-slate-900"
               >
-                <option value="all">All Categories</option>
+                <option value="all">Semua Kategori</option>
                 {categories.map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="flex-1">
+              <Label className="text-slate-700 dark:text-slate-200">Tanggal Pinjam</Label>
+              <Input
+                type="date"
+                value={borrowDate}
+                onChange={(e) => setBorrowDate(e.target.value)}
+                min={today}
+                className="mt-2 border-slate-600 dark:border-slate-300 bg-slate-700 dark:bg-white text-white dark:text-slate-900"
+              />
+              <Label className="mt-3 text-slate-700 dark:text-slate-200">Tanggal Kembali</Label>
+              <Input
+                type="date"
+                value={returnDate}
+                onChange={(e) => setReturnDate(e.target.value)}
+                min={borrowDate || today}
+                className="mt-2 border-slate-600 dark:border-slate-300 bg-slate-700 dark:bg-white text-white dark:text-slate-900"
+              />
             </div>
           </div>
         </CardContent>
@@ -157,36 +234,36 @@ export default function BrowsePage() {
       {/* Items Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filteredItems.length === 0 ? (
-          <Card className="border-slate-700 bg-slate-800 md:col-span-2 lg:col-span-3">
+          <Card className="border-slate-700 dark:border-slate-200 bg-slate-800 dark:bg-white md:col-span-2 lg:col-span-3">
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <Package className="mb-4 h-12 w-12 text-slate-500" />
-              <p className="text-slate-400">No items available</p>
+              <Package className="mb-4 h-12 w-12 text-slate-500 dark:text-slate-400" />
+              <p className="text-slate-400 dark:text-slate-600">Tidak ada barang tersedia</p>
             </CardContent>
           </Card>
         ) : (
           filteredItems.map((item) => (
-            <Card key={item.id} className="border-slate-700 bg-slate-800">
+                    <Card key={item.id} className="border-slate-700 dark:border-slate-200 bg-slate-800 dark:bg-white">
               <CardHeader>
-                <CardTitle className="text-lg text-white">{item.name}</CardTitle>
-                <CardDescription className="text-slate-400">{item.category}</CardDescription>
+                <CardTitle className="text-lg text-white dark:text-slate-900">{item.name}</CardTitle>
+                <CardDescription className="text-slate-400 dark:text-slate-600">{item.category}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <p className="text-sm text-slate-400">Description</p>
-                  <p className="text-sm text-white">{item.description || "No description"}</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-600">Deskripsi</p>
+                  <p className="text-sm text-white dark:text-slate-900">{item.description || "Tidak ada deskripsi"}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-slate-400">Available</p>
-                    <p className="text-xl font-bold text-blue-400">{item.quantity_available}</p>
+                    <p className="text-sm text-slate-400 dark:text-slate-600">Tersedia</p>
+                    <p className="text-xl font-bold text-blue-400 dark:text-blue-600">{item.quantity_available}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-400">Location</p>
-                    <p className="text-sm text-white">{item.location || "N/A"}</p>
+                    <p className="text-sm text-slate-400 dark:text-slate-600">Lokasi</p>
+                    <p className="text-sm text-white dark:text-slate-900">{item.location || "N/A"}</p>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-200">Quantity to Borrow</Label>
+                  <Label className="text-slate-700 dark:text-slate-200">Jumlah untuk Dipinjam</Label>
                   <div className="flex gap-2">
                     <Input
                       type="number"
@@ -194,14 +271,14 @@ export default function BrowsePage() {
                       max={item.quantity_available}
                       value={selectedItems.get(item.id) || 0}
                       onChange={(e) => handleQuantityChange(item.id, Number.parseInt(e.target.value) || 0)}
-                      className="border-slate-600 bg-slate-700 text-white"
+                      className="border-slate-600 dark:border-slate-300 bg-slate-700 dark:bg-white text-white dark:text-slate-900"
                     />
                     <Button
                       onClick={() => handleQuantityChange(item.id, 0)}
                       variant="outline"
-                      className="border-slate-600 hover:bg-slate-700"
+                      className="flex-1 border-red-500 dark:border-red-600 text-red-400 dark:text-red-600 hover:bg-red-500/10 dark:hover:bg-red-100"
                     >
-                      Clear
+                      Hapus
                     </Button>
                   </div>
                 </div>

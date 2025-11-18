@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useEffect, useState } from "react"
 import { Package, Plus, Edit, Trash2, AlertCircle } from "lucide-react"
+import { LoadingSpinner } from "@/components/loading-spinner"
 
 interface InventoryItem {
   id: string
@@ -107,87 +108,83 @@ export default function DashboardPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-slate-400">Loading...</div>
-      </div>
-    )
+    return <LoadingSpinner />
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">Inventory Management</h1>
+        <h1 className="text-3xl font-bold text-white dark:text-slate-900">Manajemen Inventaris</h1>
         {userRole === "admin" && (
-          <Button onClick={() => setIsAddingItem(!isAddingItem)} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={() => setIsAddingItem(!isAddingItem)} className="bg-blue-600 hover:bg-blue-700 text-white dark:text-white">
             <Plus className="mr-2 h-4 w-4" />
-            Add Item
+            Tambah Barang
           </Button>
         )}
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 rounded-lg bg-red-500/10 p-4 text-red-400">
+        <div className="flex items-center gap-2 rounded-lg bg-red-500/10 dark:bg-red-100 p-4 text-red-400 dark:text-red-700">
           <AlertCircle className="h-5 w-5" />
           {error}
         </div>
       )}
 
       {isAddingItem && userRole === "admin" && (
-        <Card className="border-slate-700 bg-slate-800">
+        <Card className="border-slate-700 dark:border-slate-200 bg-slate-800 dark:bg-slate-50">
           <CardHeader>
-            <CardTitle className="text-white">Add New Item</CardTitle>
+            <CardTitle className="text-white dark:text-slate-900">Tambah Barang Baru</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleAddItem} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label className="text-slate-200">Name</Label>
+                  <Label className="text-slate-200 dark:text-slate-700">Nama</Label>
                   <Input
                     required
-                    placeholder="Item name"
+                    placeholder="Nama barang"
                     value={newItem.name}
                     onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                    className="mt-1 border-slate-600 bg-slate-700 text-white"
+                    className="mt-1 border-slate-600 dark:border-slate-300 bg-slate-700 dark:bg-white text-white dark:text-slate-900"
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-200">Category</Label>
+                  <Label className="text-slate-200 dark:text-slate-700">Kategori</Label>
                   <Input
                     required
-                    placeholder="Category"
+                    placeholder="Kategori"
                     value={newItem.category}
                     onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                    className="mt-1 border-slate-600 bg-slate-700 text-white"
+                    className="mt-1 border-slate-600 dark:border-slate-300 bg-slate-700 dark:bg-white text-white dark:text-slate-900"
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-200">Quantity</Label>
+                  <Label className="text-slate-200 dark:text-slate-700">Jumlah</Label>
                   <Input
                     required
                     type="number"
                     placeholder="0"
                     value={newItem.quantity_total}
                     onChange={(e) => setNewItem({ ...newItem, quantity_total: e.target.value })}
-                    className="mt-1 border-slate-600 bg-slate-700 text-white"
+                    className="mt-1 border-slate-600 dark:border-slate-300 bg-slate-700 dark:bg-white text-white dark:text-slate-900"
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-200">Location</Label>
+                  <Label className="text-slate-200 dark:text-slate-700">Lokasi</Label>
                   <Input
-                    placeholder="Storage location"
+                    placeholder="Lokasi penyimpanan"
                     value={newItem.location}
                     onChange={(e) => setNewItem({ ...newItem, location: e.target.value })}
-                    className="mt-1 border-slate-600 bg-slate-700 text-white"
+                    className="mt-1 border-slate-600 dark:border-slate-300 bg-slate-700 dark:bg-white text-white dark:text-slate-900"
                   />
                 </div>
               </div>
               <div className="flex gap-2">
                 <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                  Save Item
+                  Simpan
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setIsAddingItem(false)}>
-                  Cancel
+                  Batal
                 </Button>
               </div>
             </form>
@@ -198,37 +195,37 @@ export default function DashboardPage() {
       {/* Items Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {items.length === 0 ? (
-          <Card className="border-slate-700 bg-slate-800 md:col-span-2 lg:col-span-3">
+          <Card className="border-slate-700 dark:border-slate-200 bg-slate-800 dark:bg-slate-50 md:col-span-2 lg:col-span-3">
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <Package className="mb-4 h-12 w-12 text-slate-500" />
-              <p className="text-slate-400">No inventory items yet</p>
+              <Package className="mb-4 h-12 w-12 text-slate-500 dark:text-slate-400" />
+              <p className="text-slate-400 dark:text-slate-600">Belum ada barang inventaris</p>
             </CardContent>
           </Card>
         ) : (
           items.map((item) => (
-            <Card key={item.id} className="border-slate-700 bg-slate-800">
+            <Card key={item.id} className="border-slate-700 dark:border-slate-200 bg-slate-800 dark:bg-white">
               <CardHeader>
-                <CardTitle className="text-lg text-white">{item.name}</CardTitle>
-                <CardDescription className="text-slate-400">{item.category}</CardDescription>
+                <CardTitle className="text-lg text-white dark:text-slate-900">{item.name}</CardTitle>
+                <CardDescription className="text-slate-400 dark:text-slate-600">{item.category}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div>
-                    <p className="text-sm text-slate-400">Available</p>
-                    <p className="text-2xl font-bold text-blue-400">
+                    <p className="text-sm text-slate-400 dark:text-slate-600">Tersedia</p>
+                    <p className="text-2xl font-bold text-blue-400 dark:text-blue-600">
                       {item.quantity_available}/{item.quantity_total}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-400">Location</p>
-                    <p className="text-sm text-white">{item.location || "N/A"}</p>
+                    <p className="text-sm text-slate-400 dark:text-slate-600">Lokasi</p>
+                    <p className="text-sm text-white dark:text-slate-900">{item.location || "N/A"}</p>
                   </div>
                   {userRole === "admin" && (
                     <div className="flex gap-2 pt-4">
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 border-slate-600 hover:bg-slate-700 bg-transparent"
+                        className="flex-1 border-slate-600 dark:border-slate-300 hover:bg-slate-700 dark:hover:bg-slate-100 bg-transparent text-white dark:text-slate-900"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -236,7 +233,7 @@ export default function DashboardPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleDeleteItem(item.id)}
-                        className="flex-1 border-red-500 text-red-400 hover:bg-red-500/10"
+                        className="flex-1 border-red-500 dark:border-red-600 text-red-400 dark:text-red-600 hover:bg-red-500/10 dark:hover:bg-red-100"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

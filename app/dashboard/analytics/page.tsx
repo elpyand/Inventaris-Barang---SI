@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useEffect, useState } from "react"
 import { TrendingUp, Users, Package, CheckCircle } from "lucide-react"
+import { LoadingSpinner } from "@/components/loading-spinner"
 
 interface DashboardStats {
   totalItems: number
@@ -87,89 +88,89 @@ export default function AnalyticsPage() {
   }, [])
 
   if (isLoading) {
-    return <div className="text-slate-400">Loading analytics...</div>
+    return <LoadingSpinner />
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-white">Analytics</h1>
+      <h1 className="text-3xl font-bold text-white dark:text-slate-900">Analitik</h1>
 
       {/* Key Metrics */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-slate-700 bg-slate-800">
+        <Card className="border-slate-700 dark:border-slate-200 bg-slate-800 dark:bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-200">Total Items</CardTitle>
-            <Package className="h-4 w-4 text-blue-400" />
+            <CardTitle className="text-sm font-medium text-slate-200 dark:text-slate-700">Total Barang</CardTitle>
+            <Package className="h-4 w-4 text-blue-400 dark:text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.totalItems}</div>
-            <p className="text-xs text-slate-400">In inventory</p>
+            <div className="text-2xl font-bold text-white dark:text-slate-900">{stats.totalItems}</div>
+            <p className="text-xs text-slate-400 dark:text-slate-600">Di inventaris</p>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-700 bg-slate-800">
+        <Card className="border-slate-700 dark:border-slate-200 bg-slate-800 dark:bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-200">Total Borrows</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-400" />
+            <CardTitle className="text-sm font-medium text-slate-200 dark:text-slate-700">Total Peminjaman</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-400 dark:text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.totalBorrows}</div>
-            <p className="text-xs text-slate-400">All time</p>
+            <div className="text-2xl font-bold text-white dark:text-slate-900">{stats.totalBorrows}</div>
+            <p className="text-xs text-slate-400 dark:text-slate-600">Sepanjang masa</p>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-700 bg-slate-800">
+        <Card className="border-slate-700 dark:border-slate-200 bg-slate-800 dark:bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-200">Active Borrows</CardTitle>
-            <CheckCircle className="h-4 w-4 text-yellow-400" />
+            <CardTitle className="text-sm font-medium text-slate-200 dark:text-slate-700">Peminjaman Aktif</CardTitle>
+            <CheckCircle className="h-4 w-4 text-yellow-400 dark:text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.activeBorrows}</div>
-            <p className="text-xs text-slate-400">Currently out</p>
+            <div className="text-2xl font-bold text-white dark:text-slate-900">{stats.activeBorrows}</div>
+            <p className="text-xs text-slate-400 dark:text-slate-600">Sedang dipinjam</p>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-700 bg-slate-800">
+        <Card className="border-slate-700 dark:border-slate-200 bg-slate-800 dark:bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-200">Total Students</CardTitle>
-            <Users className="h-4 w-4 text-purple-400" />
+            <CardTitle className="text-sm font-medium text-slate-200 dark:text-slate-700">Total Siswa</CardTitle>
+            <Users className="h-4 w-4 text-purple-400 dark:text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.totalStudents}</div>
-            <p className="text-xs text-slate-400">Registered</p>
+            <div className="text-2xl font-bold text-white dark:text-slate-900">{stats.totalStudents}</div>
+            <p className="text-xs text-slate-400 dark:text-slate-600">Terdaftar</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Top Stats */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="border-slate-700 bg-slate-800">
+        <Card className="border-slate-700 dark:border-slate-200 bg-slate-800 dark:bg-white">
           <CardHeader>
-            <CardTitle className="text-white">Most Borrowed Item</CardTitle>
-            <CardDescription>Most popular item this period</CardDescription>
+            <CardTitle className="text-white dark:text-slate-900">Barang Paling Dipinjam</CardTitle>
+            <CardDescription className="dark:text-slate-600">Barang paling populer pada periode ini</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-400">{stats.mostBorrowedItem || "N/A"}</div>
-            <p className="mt-2 text-sm text-slate-400">Borrowed {stats.mostBorrowedCount} times</p>
+            <div className="text-3xl font-bold text-blue-400 dark:text-blue-600">{stats.mostBorrowedItem || "N/A"}</div>
+            <p className="mt-2 text-sm text-slate-400 dark:text-slate-600">Dipinjam {stats.mostBorrowedCount} kali</p>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-700 bg-slate-800">
+        <Card className="border-slate-700 dark:border-slate-200 bg-slate-800 dark:bg-white">
           <CardHeader>
-            <CardTitle className="text-white">Inventory Status</CardTitle>
-            <CardDescription>Current inventory health</CardDescription>
+            <CardTitle className="text-white dark:text-slate-900">Status Inventaris</CardTitle>
+            <CardDescription className="dark:text-slate-600">Kesehatan inventaris saat ini</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <p className="text-sm text-slate-400">
-                <span className="font-semibold text-white">
+              <p className="text-sm text-slate-400 dark:text-slate-600">
+                <span className="font-semibold text-white dark:text-slate-900">
                   {Math.round((stats.activeBorrows / stats.totalBorrows) * 100 || 0)}%
                 </span>{" "}
-                of requests are active
+                dari permintaan sedang aktif
               </p>
-              <div className="h-2 w-full rounded-full bg-slate-700">
+              <div className="h-2 w-full rounded-full bg-slate-700 dark:bg-slate-300">
                 <div
-                  className="h-full rounded-full bg-blue-500"
+                  className="h-full rounded-full bg-blue-500 dark:bg-blue-600"
                   style={{ width: `${(stats.activeBorrows / stats.totalBorrows) * 100 || 0}%` }}
                 />
               </div>
@@ -179,28 +180,28 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Recent Borrow History */}
-      <Card className="border-slate-700 bg-slate-800">
+      <Card className="border-slate-700 dark:border-slate-200 bg-slate-800 dark:bg-white">
         <CardHeader>
-          <CardTitle className="text-white">Recent Borrow History</CardTitle>
-          <CardDescription>Latest borrowing activity</CardDescription>
+          <CardTitle className="text-white dark:text-slate-900">Riwayat Peminjaman Terbaru</CardTitle>
+          <CardDescription className="dark:text-slate-600">Aktivitas peminjaman terbaru</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {borrowHistory.length === 0 ? (
-              <p className="text-slate-400">No borrow history yet</p>
+              <p className="text-slate-400 dark:text-slate-600">Belum ada riwayat peminjaman</p>
             ) : (
               borrowHistory.map((record) => (
                 <div
                   key={record.id}
-                  className="flex items-center justify-between border-b border-slate-700 pb-4 last:border-0"
+                  className="flex items-center justify-between border-b border-slate-700 dark:border-slate-200 pb-4 last:border-0"
                 >
                   <div>
-                    <p className="font-semibold text-white">{record.inventory_items?.name}</p>
-                    <p className="text-sm text-slate-400">Borrowed by: {record.profiles?.full_name}</p>
+                    <p className="font-semibold text-white dark:text-slate-900">{record.inventory_items?.name}</p>
+                    <p className="text-sm text-slate-400 dark:text-slate-600">Dipinjam oleh: {record.profiles?.full_name}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-slate-400">{new Date(record.borrow_date).toLocaleDateString()}</p>
-                    <p className="text-xs text-slate-500">Qty: {record.quantity}</p>
+                    <p className="text-sm text-slate-400 dark:text-slate-600">{new Date(record.borrow_date).toLocaleDateString()}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-600">Jml: {record.quantity}</p>
                   </div>
                 </div>
               ))
