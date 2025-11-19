@@ -69,7 +69,7 @@ export default function AnalyticsPage() {
       const mostBorrowedEntry = Array.from(itemBorrowCounts.entries()).sort((a, b) => b[1] - a[1])[0]
 
       const mostBorrowedItem = borrowStats?.find((record: any) => record.item_id === mostBorrowedEntry?.[0])
-        ?.inventory_items?.name
+        ?.inventory_items?.[0]?.name
 
       setStats({
         totalItems: itemsCount || 0,
@@ -196,7 +196,7 @@ export default function AnalyticsPage() {
                   className="flex items-center justify-between border-b border-slate-700 dark:border-slate-200 pb-4 last:border-0"
                 >
                   <div>
-                    <p className="font-semibold text-white dark:text-slate-900">{record.inventory_items?.name}</p>
+                    <p className="font-semibold text-white dark:text-slate-900">{record.inventory_items?.[0]?.name}</p>
                     <p className="text-sm text-slate-400 dark:text-slate-600">Dipinjam oleh: {record.profiles?.full_name}</p>
                   </div>
                   <div className="text-right">

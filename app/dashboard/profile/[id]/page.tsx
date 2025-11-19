@@ -36,7 +36,7 @@ export default async function AdminProfilePage({ params }: Props) {
 
   const initials = profile.full_name
     ?.split(" ")
-    .map((n) => n[0].toUpperCase())
+    .map((n: string) => n[0].toUpperCase())
     .join("") || "?"
 
   return (

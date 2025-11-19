@@ -4,9 +4,11 @@ const SUPABASE_URL = process.env.SUPABASE_URL!;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const client = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-export default async function handler(req, res) {
+import { NextApiRequest, NextApiResponse } from 'next';
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const event = await req.json(); // sesuaikan payload webhook dari Supabase Auth
+    const event = req.body; // sesuaikan payload webhook dari Supabase Auth
     const user = event?.user;
     if (!user?.id) return res.status(400).send('no user');
 

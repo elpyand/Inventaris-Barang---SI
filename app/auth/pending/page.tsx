@@ -8,10 +8,7 @@ export default function PendingPage() {
       <div className="w-full max-w-lg text-center bg-slate-800 rounded-lg p-8">
         <h1 className="text-2xl font-bold text-white">Halaman Menunggu Dihapus</h1>
         <p className="mt-4 text-slate-300">Fitur halaman menunggu pendaftaran telah dihapus. Silakan masuk atau hubungi admin jika ada masalah.</p>
-      </div>
-    </div>
-  )
-}
+
       </div>
     </div>
   )

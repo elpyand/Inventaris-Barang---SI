@@ -19,6 +19,8 @@ interface BorrowRequest {
   quantity_requested: number
   status: string
   created_at: string
+  borrow_date?: string | null
+  return_date?: string | null
   inventory_items: { name: string; quantity_available: number }
   profiles: { full_name?: string; role?: string }
 }
