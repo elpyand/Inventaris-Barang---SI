@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label"
 import { useEffect, useState } from "react"
 import { Package, Plus, Edit, Trash2, AlertCircle } from "lucide-react"
 import { LoadingSpinner } from "@/components/loading-spinner"
+import ConfirmModal from "@/components/confirm-modal"
+import { useToast } from "@/components/toast"
 
 interface InventoryItem {
   id: string
@@ -32,6 +34,15 @@ export default function DashboardPage() {
   })
   const [userRole, setUserRole] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const { showToast } = useToast()
+  const [editOpen, setEditOpen] = useState(false)
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null)
+  const [editLoading, setEditLoading] = useState(false)
+  const [originalTotal, setOriginalTotal] = useState<number | null>(null)
+  const [originalAvailable, setOriginalAvailable] = useState<number | null>(null)
 
   useEffect(() => {
     const loadData = async () => {
@@ -50,6 +61,11 @@ export default function DashboardPage() {
         .from("inventory_items")
         .select("*")
         .order("created_at", { ascending: false })
+
+      console.log('User:', user);
+      console.log('Profile:', profile);
+      console.log('Items Data:', itemsData);
+      console.log('Items Error:', itemsError);
 
       if (itemsError) {
         setError(itemsError.message)
@@ -97,14 +113,108 @@ export default function DashboardPage() {
   }
 
   const handleDeleteItem = async (id: string) => {
+    setDeleting(true)
     const supabase = createClient()
+
+    // Check for dependent borrow_requests referencing this item to avoid FK violation
+    const { data: relatedRequests, error: relatedError } = await supabase
+      .from("borrow_requests")
+      .select("id")
+      .eq("item_id", id)
+      .limit(1)
+
+    if (relatedError) {
+      setError(relatedError.message)
+      setDeleting(false)
+      return
+    }
+
+    if (relatedRequests && relatedRequests.length > 0) {
+      const msg = "Tidak bisa menghapus barang: terdapat permintaan peminjaman yang merujuk ke barang ini. Batalkan atau selesaikan permintaan terlebih dahulu."
+      setError(msg)
+      showToast(msg, "error")
+      setDeleting(false)
+      setConfirmOpen(false)
+      return
+    }
+
     const { error: deleteError } = await supabase.from("inventory_items").delete().eq("id", id)
 
     if (deleteError) {
       setError(deleteError.message)
+      showToast(deleteError.message, "error")
     } else {
       setItems(items.filter((item) => item.id !== id))
+      showToast("Barang berhasil dihapus.")
     }
+
+    setDeleting(false)
+    setConfirmOpen(false)
+    setDeletingId(null)
+  }
+
+  const openDeleteConfirm = (id: string) => {
+    setDeletingId(id)
+    setConfirmOpen(true)
+  }
+
+  const openEdit = (item: InventoryItem) => {
+    // copy the item to avoid mutating original object from list
+    setEditingItem({ ...item })
+    setOriginalTotal(item.quantity_total)
+    setOriginalAvailable(item.quantity_available)
+    setEditOpen(true)
+  }
+
+  const handleUpdateItem = async () => {
+    if (!editingItem) return
+    setEditLoading(true)
+    const supabase = createClient()
+
+    // compute borrowed count and validate edits
+    const prevTotal = originalTotal ?? editingItem.quantity_total
+    const prevAvailable = originalAvailable ?? editingItem.quantity_available
+    const borrowed = Math.max(0, prevTotal - prevAvailable)
+
+    // If admin attempts to set total lower than currently borrowed, block and show error.
+    if (editingItem.quantity_total < borrowed) {
+      const msg = `Tidak bisa mengurangi jumlah total di bawah ${borrowed} barang yang sedang dipinjam.`
+      setError(msg)
+      showToast(msg, "error")
+      setEditLoading(false)
+      return
+    }
+
+    // New available equals total minus borrowed
+    const newAvailable = Math.max(0, editingItem.quantity_total - borrowed)
+
+    const { error, data } = await supabase
+      .from("inventory_items")
+      .update({
+        name: editingItem.name,
+        category: editingItem.category,
+        quantity_total: editingItem.quantity_total,
+        quantity_available: newAvailable,
+        location: editingItem.location,
+      })
+      .eq("id", editingItem.id)
+      .select()
+      .maybeSingle()
+
+    if (error) {
+      setError(error.message)
+      showToast(error.message, "error")
+      setEditLoading(false)
+      return
+    }
+
+    // Update local state with returned data (or optimistic update). Ensure quantity_available updated.
+    const updated = data || { ...editingItem, quantity_available: newAvailable }
+    setItems((prev) => prev.map((it) => (it.id === editingItem.id ? { ...it, ...updated } : it)))
+    showToast("Barang berhasil diperbarui.")
+    setEditLoading(false)
+    setEditOpen(false)
+    setEditingItem(null)
   }
 
   if (isLoading) {
@@ -225,6 +335,7 @@ export default function DashboardPage() {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => openEdit(item)}
                         className="flex-1 border-slate-600 dark:border-slate-300 hover:bg-slate-700 dark:hover:bg-slate-100 bg-transparent text-white dark:text-slate-900"
                       >
                         <Edit className="h-4 w-4" />
@@ -232,7 +343,7 @@ export default function DashboardPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDeleteItem(item.id)}
+                        onClick={() => openDeleteConfirm(item.id)}
                         className="flex-1 border-red-500 dark:border-red-600 text-red-400 dark:text-red-600 hover:bg-red-500/10 dark:hover:bg-red-100"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -245,6 +356,71 @@ export default function DashboardPage() {
           ))
         )}
       </div>
+      <ConfirmModal
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={async () => {
+          if (deletingId) await handleDeleteItem(deletingId)
+        }}
+        title="Hapus Barang"
+        description="Apakah Anda yakin ingin menghapus barang ini? Tindakan ini tidak dapat dikembalikan."
+        confirmLabel={deleting ? "Menghapus..." : "Hapus"}
+        loading={deleting}
+      />
+      <ConfirmModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        onConfirm={async () => {
+          await handleUpdateItem()
+        }}
+        title="Edit Barang"
+        description="Ubah informasi barang di bawah ini lalu klik Simpan."
+        confirmLabel={editLoading ? "Menyimpan..." : "Simpan"}
+        loading={editLoading}
+      >
+        {editingItem && (
+          <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleUpdateItem(); }}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label className="text-slate-200 dark:text-slate-700">Nama</Label>
+                <Input
+                  value={editingItem.name}
+                  onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+                  className="mt-1 border-slate-600 dark:border-slate-300 bg-slate-700 dark:bg-white text-white dark:text-slate-900"
+                />
+              </div>
+
+              <div>
+                <Label className="text-slate-200 dark:text-slate-700">Kategori</Label>
+                <Input
+                  value={editingItem.category}
+                  onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
+                  className="mt-1 border-slate-600 dark:border-slate-300 bg-slate-700 dark:bg-white text-white dark:text-slate-900"
+                />
+              </div>
+
+              <div>
+                <Label className="text-slate-200 dark:text-slate-700">Jumlah Total</Label>
+                <Input
+                  type="number"
+                  value={String(editingItem.quantity_total)}
+                  onChange={(e) => setEditingItem({ ...editingItem, quantity_total: Number.parseInt(e.target.value || "0") })}
+                  className="mt-1 border-slate-600 dark:border-slate-300 bg-slate-700 dark:bg-white text-white dark:text-slate-900"
+                />
+              </div>
+
+              <div>
+                <Label className="text-slate-200 dark:text-slate-700">Lokasi</Label>
+                <Input
+                  value={editingItem.location || ""}
+                  onChange={(e) => setEditingItem({ ...editingItem, location: e.target.value })}
+                  className="mt-1 border-slate-600 dark:border-slate-300 bg-slate-700 dark:bg-white text-white dark:text-slate-900"
+                />
+              </div>
+            </div>
+          </form>
+        )}
+      </ConfirmModal>
     </div>
   )
 }
